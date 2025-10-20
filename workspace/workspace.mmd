@@ -1,0 +1,28 @@
+C4Container
+    title Container Diagram for IoT Analytics Platform
+
+    Person(data_scientist, "Data Scientist / Analyst", "ML and predictive maintenance.")
+    Person(reactive_consumer, "Real-Time Subscriber/LEGO Product Teams", "LEGO Product Teams requiring data")
+
+    System_Boundary(iot_platform, "IoT Analytics Platform (Azure/Pulsar)") {
+
+        Container(iot_hub, "Azure IoT Hub", "PaaS", "Cloud ingress and routing.")
+        Container(storage_account, "Azure Blob Storage", "PaaS", "Primary, low-cost persistence (Hot, Cold, Archive).", $sprite="storage")
+        Container(pulsar_platform, "Managed Apache Pulsar", "PaaS", "Unified streaming (AMMA AsyncAPI governed).")
+        Container(databricks, "Databricks", "PaaS", "Large-scale ETL and analytics. (LEGO NEXUS Platform governed).", $sprite="storage")
+        
+        Component(raw_topic, "Raw Machine Data Topic", "Pulsar Topic", "Direct stream from IoT Hub", $tags="realtime")
+        Component(delta_lake, "Delta Lake Tables", "Delta Lake / Parquet", "High-quality, structured, columnar storage.")
+
+        Rel(pulsar_platform, pulsar_platform, "Enriches raw data with minimal validation and schema enforcement", "Pulsar Function")
+        Rel(iot_hub, storage_account, "Routes raw data batches", "Azure Storage Connector")
+        Rel(iot_hub, pulsar_platform, "Routes data stream", "Stream Analytics / Function")
+        Rel(pulsar_platform, raw_topic, "Stores Stream Ingress", "Producer")
+        Rel(raw_topic, databricks, "Sinks raw data into columnar bronze tables", "LEGO Nexus Connector")
+        Rel(databricks, delta_lake, "Persists Data into", "Spark/Delta Lake")
+
+    }
+
+  
+    Rel(reactive_consumer, raw_topic, "Subscribes for real-time alerts")
+    Rel(data_scientist, databricks, "Queries and analyzes structured data", "Spark SQL")
